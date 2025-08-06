@@ -1,0 +1,110 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Priyo Pay Chat Widget</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="chatBubble" role="button" tabindex="0" aria-label="Open chat" title="Open chat">
+    <img src="https://i.imgur.com/4DB1BHj.png" alt="Bot Icon"/>
+  </div>
+
+  <div id="bubbleArrow" aria-hidden="true"></div>
+
+  <div id="bubblePopup" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="popup-arrow" aria-hidden="true"></div>
+    <div id="popupContent">
+      <span id="popupMessage">Hello! 👋 Welcome to Priyo Pay. How can I help you today?</span>
+      <button id="popupCloseBtn" aria-label="Close popup" title="Close" type="button">&times;</button>
+    </div>
+  </div>
+
+  <div id="chatWidget" role="region" aria-label="Priyo Pay Chat Widget" tabindex="0" aria-live="polite">
+    <div class="chat-header">
+      <div class="header-left"></div>
+      <img src="https://imgur.com/OrhhQLr.png" alt="Priyo Pay Logo"/>
+      <span id="chatCloseBtn" role="button" tabindex="0" aria-label="Minimize chat" title="Minimize chat">&times;</span>
+    </div>
+
+    <div class="chat-tabs" role="tablist" aria-label="Chat navigation tabs">
+      <div class="chat-tab active" id="tabChatBtn" role="tab" aria-selected="true" tabindex="0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" style="margin-right:6px;">
+          <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+        </svg>
+        Chat
+      </div>
+      <div class="chat-tab" id="tabHelpBtn" role="tab" aria-selected="false" tabindex="0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" style="margin-right:6px;">
+          <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm1-7.75c-.34.17-.5.5-.5.75h-2a2.003 2.003 0 0 1 1.5-1.95V7h-1v-2h2v2.25z"/>
+        </svg>
+        Help
+      </div>
+    </div>
+
+    <div id="tabChat" role="tabpanel" aria-labelledby="tabChatBtn" tabindex="0">
+      <div id="chatBody" aria-live="polite" aria-relevant="additions"></div>
+      <div id="typingIndicator">Priyo is typing...</div>
+    </div>
+
+    <div id="tabHelp" role="tabpanel" aria-labelledby="tabHelpBtn" tabindex="0" style="display:none;">
+      <div style="height:100%; display:flex; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+        <div>
+          <p style="margin:0 0 8px 0; font-weight:600;">Open the help center</p>
+          <p style="margin:0 0 12px 0; color:#666;">Clicking Help opens our full helpdesk in a new tab.</p>
+          <button id="openHelpBtn" style="padding:8px 12px; border-radius:6px; border:0; background:#E60023; color:#fff; cursor:pointer;">Open Help Center</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-footer" id="chatFooter" aria-hidden="false">
+      <input id="chatInput" type="text" placeholder="Type your message..." aria-label="Type your message" autocomplete="off"/>
+      <button id="sendBtn" aria-label="Send message">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
